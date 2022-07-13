@@ -44,29 +44,28 @@ function checksTodoExists(request, response, next) {
   const { username } = request.headers;
   const { id } = request.params;
 
-  const uuidRegex =
-    /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi;
+  const user = users.filter((user) => user.username === username)[0];
+  const todo = user?.todos.filter((todo) => todo.id === id)[0];
 
-  if (!uuidRegex.test(id)) {
-    return response.status(400);
+  const userExists = users.some((user) => user.username === username);
+  const isUuid = validate(id);
+  const isUserTodo = user?.todos.some((todo) => todo.id === id);
+
+  if (!isUuid) {
+    return response.status(400).json({ error: "This id is not a valid UUID" });
   }
 
-  const existingUser = users.find((user) => user.username === username);
-  
-  if(!existingUser) {
-    return response.status(404);
-  }
-  
-  const existingTodo = existingUser.todos.find((todo) => todo.id === id);
-
-  if(!existingTodo) {
-    return response.status(404);
+  if (!userExists || !isUserTodo) {
+    return response.status(404).json({ error: "Ocorreu um erro" });
   }
 
-  request.todo = existingTodo;
-  request.user = existingUser;
-  next();
+  if (userExists && isUuid && isUserTodo) {
+    request.todo = todo;
+    request.user = user;
+    return next();
+  }
 }
+
 
 function findUserById(request, response, next) {
   const { id } = request.params;
